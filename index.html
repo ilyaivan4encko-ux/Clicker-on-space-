@@ -1,0 +1,657 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<meta name="theme-color" content="#0b0d12">
+<title>INDUSTRY: POCKET UNIVERSE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;800&family=Roboto+Mono:wght@400;700&display=swap');
+
+:root {
+    --bg-dark: #050608;
+    --card-bg: rgba(20, 24, 33, 0.65);
+    --nav-bg: rgba(10, 12, 16, 0.9);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --neon-blue: #00f3ff;
+    --neon-purple: #bc13fe;
+    --neon-gold: #ffd700;
+    --neon-green: #00ff88;
+    --neon-red: #ff2a2a;
+    --safe-area-bottom: env(safe-area-inset-bottom);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background: var(--bg-dark);
+    font-family: 'Rajdhani', sans-serif;
+    color: #fff;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Background Canvas */
+#starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -2;
+}
+#vignette {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at center, transparent 0%, #000 120%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* --- LAYOUT STRUCTURE --- */
+
+/* Top Resource Bar */
+.top-bar {
+    height: 70px;
+    background: var(--nav-bg);
+    backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 10px;
+    z-index: 10;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+.res-item {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.res-val { font-family: 'Rajdhani'; font-weight: 800; font-size: 18px; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+.res-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+.res-gain { position: absolute; top: -5px; right: -10px; font-size: 9px; color: var(--neon-green); opacity: 0; transition: opacity 0.3s; }
+
+/* Main Content Area */
+.main-viewport {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    padding-bottom: 100px; /* Space for bottom nav */
+    perspective: 1000px;
+    scroll-behavior: smooth;
+}
+
+/* 3D Card Container */
+.content-layer {
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.tab-view {
+    display: none;
+    animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tab-view.active { display: block; }
+
+/* Bottom Navigation */
+.bottom-nav {
+    height: calc(65px + var(--safe-area-bottom));
+    background: var(--nav-bg);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding-top: 10px;
+    z-index: 100;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #666;
+    font-size: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+    width: 20%;
+}
+
+.nav-icon { font-size: 22px; margin-bottom: 4px; transition: 0.2s; filter: drop-shadow(0 0 0 transparent); }
+.nav-item.active { color: var(--neon-blue); }
+.nav-item.active .nav-icon { transform: translateY(-3px); filter: drop-shadow(0 0 8px var(--neon-blue)); }
+
+/* --- UI ELEMENTS --- */
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.card-title { font-weight: 700; font-size: 16px; color: #fff; }
+.card-sub { font-size: 12px; color: #888; }
+
+/* Big Action Button */
+.big-btn {
+    width: 100%;
+    height: 70px;
+    background: linear-gradient(135deg, var(--neon-blue), #008c9e);
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-family: 'Rajdhani';
+    font-weight: 800;
+    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+    margin-bottom: 20px;
+    transition: transform 0.1s;
+}
+.big-btn:active { transform: scale(0.96); }
+
+/* Regular Buttons */
+.btn-action {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Rajdhani';
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+}
+.btn-action.buy { background: rgba(0, 243, 255, 0.1); border-color: rgba(0, 243, 255, 0.3); color: var(--neon-blue); }
+.btn-action:disabled { opacity: 0.4; filter: grayscale(1); }
+
+/* Ripple Effect */
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    pointer-events: none;
+}
+
+/* Animations */
+@keyframes slideIn { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+@keyframes ripple { to { transform: scale(4); opacity: 0; } }
+@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
+
+/* Floating Text */
+.floating-text {
+    position: fixed;
+    pointer-events: none;
+    color: var(--neon-blue);
+    font-weight: bold;
+    font-size: 18px;
+    animation: floatUp 0.8s ease-out forwards;
+    z-index: 999;
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+@keyframes floatUp { 0% { opacity:1; transform:translateY(0) scale(1); } 100% { opacity:0; transform:translateY(-50px) scale(1.5); } }
+
+/* Grid for Upgrades */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+/* Planet visuals */
+.planet-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(45deg, #4facfe, #00f2fe);
+    box-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+    margin-right: 12px;
+}
+
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="vignette"></div>
+
+<div class="top-bar">
+    <div class="res-item">
+        <div class="res-val" style="color:var(--neon-blue)" id="res-energy">0</div>
+        <div class="res-label">Энергия</div>
+        <div class="res-gain" id="ps-energy">+0/s</div>
+    </div>
+    <div class="res-item">
+        <div class="res-val" style="color:var(--neon-gold)" id="res-minerals">0</div>
+        <div class="res-label">Минералы</div>
+        <div class="res-gain" id="ps-minerals">+0/s</div>
+    </div>
+    <div class="res-item">
+        <div class="res-val" style="color:var(--neon-green)" id="res-know">0</div>
+        <div class="res-label">Знания</div>
+        <div class="res-gain" id="ps-know">+0/s</div>
+    </div>
+</div>
+
+<div class="main-viewport">
+    <div class="content-layer" id="3d-layer">
+        
+        <div id="tab-prod" class="tab-view active">
+            <button class="big-btn" id="main-btn" onclick="Game.logic.click(event)">
+                Сгенерировать
+                <div style="font-size:10px; font-weight:400; opacity:0.7; margin-top:4px">Tap Power: <span id="tap-power">1</span></div>
+            </button>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Генератор кликов</span>
+                    <span class="card-sub">Lv.<span id="gen-lvl">0</span></span>
+                </div>
+                <div class="card-sub">Увеличивает силу нажатия</div>
+                <button class="btn-action buy" onclick="Game.logic.buyGenerator(event)">Улучшить (<span id="gen-cost">10</span> En)</button>
+            </div>
+
+            <h3 style="margin:20px 0 10px 5px; font-size:14px; color:#888; text-transform:uppercase">Автоматизация</h3>
+            <div id="buildings-list"></div>
+        </div>
+
+        <div id="tab-tech" class="tab-view">
+            <h3 style="margin:0 0 15px 0; color:var(--neon-green)">Лаборатория</h3>
+            <div class="grid-2" id="tech-list"></div>
+        </div>
+
+        <div id="tab-space" class="tab-view">
+            <div class="card" style="text-align:center; padding:30px 20px; border-color:var(--neon-purple); background:rgba(188, 19, 254, 0.05)">
+                <div style="font-size:40px; margin-bottom:10px">🌌</div>
+                <div class="card-title" style="color:var(--neon-purple)">Космическая экспансия</div>
+                <div class="card-sub">Захватывайте планеты для пассивной добычи Темной Материи.</div>
+                <div style="margin-top:15px; font-size:18px; font-weight:bold; color:#fff">ТМ: <span id="res-dm">0</span></div>
+            </div>
+            <div id="planet-list"></div>
+        </div>
+
+        <div id="tab-sys" class="tab-view">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Статистика</span></div>
+                <div style="font-size:12px; line-height:1.6; color:#ccc">
+                    Всего кликов: <span id="stat-clicks">0</span><br>
+                    Время в игре: <span id="stat-time">0</span> сек<br>
+                    Множитель престижа: <span id="stat-mult">100%</span>
+                </div>
+            </div>
+
+            <div class="card" style="border-color:var(--neon-red)">
+                <div class="card-header"><span class="card-title" style="color:var(--neon-red)">Сингулярность (Престиж)</span></div>
+                <div class="card-sub" style="margin-bottom:10px">Сброс прогресса в обмен на Темную Материю. Требуется 1M Энергии.</div>
+                <button class="btn-action" style="background:rgba(255,42,42,0.1); color:var(--neon-red)" onclick="Game.logic.prestige()">СБРОС ВСЕЛЕННОЙ</button>
+            </div>
+
+            <div class="grid-2">
+                <button class="btn-action" onclick="Game.saveSystem.save(true)">Сохранить</button>
+                <button class="btn-action" onclick="Game.saveSystem.reset()">Wipe Data</button>
+            </div>
+            <div style="text-align:center; margin-top:20px; font-size:10px; color:#444">v6.0 POCKET UNIVERSE</div>
+        </div>
+
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <button class="nav-item active" onclick="Game.ui.tab('tab-prod', this)">
+        <div class="nav-icon">🏭</div>
+        <span>База</span>
+    </button>
+    <button class="nav-item" onclick="Game.ui.tab('tab-tech', this)">
+        <div class="nav-icon">⚡</div>
+        <span>Техно</span>
+    </button>
+    <button class="nav-item" onclick="Game.ui.tab('tab-space', this)">
+        <div class="nav-icon">🚀</div>
+        <span>Космос</span>
+    </button>
+    <button class="nav-item" onclick="Game.ui.tab('tab-sys', this)">
+        <div class="nav-icon">⚙️</div>
+        <span>Система</span>
+    </button>
+</nav>
+
+<script>
+/**
+ * INDUSTRY: POCKET UNIVERSE (v6.0)
+ * Optimized for Mobile Touch & Gyroscope
+ */
+
+const $ = id => document.getElementById(id);
+const fmt = n => {
+    if(n < 1000) return Math.floor(n);
+    const s = ['', 'k', 'M', 'B', 'T', 'Qa'];
+    const i = Math.floor(Math.log10(n) / 3);
+    return (n / Math.pow(1000, i)).toFixed(2) + (s[i] || '');
+};
+
+const Gen = {
+    bNames: ['Fusion Reactor', 'Quantum Miner', 'Plasma Drill', 'Nano Fabricator', 'Void Siphon', 'Stellar Engine', 'Time Weaver'],
+    pNames: ['Kepler', 'Gliese', 'Proxima', 'Trappist', 'Pegasi', 'Andromeda'],
+    techs: Array.from({length:20}, (_,i)=>({id:i, cost:100*Math.pow(2.2,i), name:`Tech Protocol ${i+1}`}))
+};
+
+const Game = {
+    state: {
+        energy: 0, minerals: 0, knowledge: 0, darkMatter: 0,
+        clickCount: 0, playtime: 0,
+        buildings: [], upgrades: [], planets: [],
+        startTime: Date.now()
+    },
+
+    logic: {
+        click(e) {
+            Game.ui.ripple(e);
+            const base = 1 + (Game.state.buildings[0]||0);
+            const mult = 1 + (Game.state.darkMatter * 0.1);
+            const gain = base * mult;
+            Game.state.energy += gain;
+            Game.state.clickCount++;
+            Game.ui.floatText(e.clientX, e.clientY, `+${fmt(gain)}`);
+            
+            // Haptic feedback if available
+            if(navigator.vibrate) navigator.vibrate(5);
+        },
+
+        buyGenerator(e) {
+            Game.ui.ripple(e);
+            const lvl = Game.state.buildings[0] || 0;
+            const cost = Math.floor(10 * Math.pow(1.5, lvl));
+            if(Game.state.energy >= cost) {
+                Game.state.energy -= cost;
+                Game.state.buildings[0] = lvl + 1;
+                Game.ui.toast("Upgrade Successful");
+            }
+        },
+
+        buyBuilding(id, e) {
+            Game.ui.ripple(e);
+            const lvl = Game.state.buildings[id] || 0;
+            const base = 50 * Math.pow(5, id-1);
+            const cost = Math.floor(base * Math.pow(1.15, lvl));
+            if(Game.state.energy >= cost) {
+                Game.state.energy -= cost;
+                Game.state.buildings[id] = lvl + 1;
+            }
+        },
+
+        buyTech(id, cost, e) {
+            Game.ui.ripple(e);
+            if(Game.state.knowledge >= cost && !Game.state.upgrades.includes(id)) {
+                Game.state.knowledge -= cost;
+                Game.state.upgrades.push(id);
+            }
+        },
+
+        colonize(id, cost, e) {
+            Game.ui.ripple(e);
+            if(Game.state.energy >= cost && !Game.state.planets.includes(id)) {
+                Game.state.energy -= cost;
+                Game.state.planets.push(id);
+                Game.state.darkMatter += 1; // Direct bonus
+            }
+        },
+
+        prestige() {
+            if(Game.state.energy < 1000000) return alert("Need 1M Energy");
+            if(confirm("Reset for Dark Matter?")) {
+                const gain = Math.floor(Math.sqrt(Game.state.energy/1000000));
+                Game.state.darkMatter += gain;
+                Game.state.energy = 0;
+                Game.state.minerals = 0;
+                Game.state.knowledge = 0;
+                Game.state.buildings = [];
+                Game.state.upgrades = [];
+                Game.state.planets = [];
+                Game.saveSystem.save();
+                location.reload();
+            }
+        },
+
+        tick() {
+            // Auto production
+            let ePs = 0, mPs = 0, kPs = 0;
+            const mult = 1 + (Game.state.darkMatter * 0.1);
+            
+            // Buildings 1-10
+            for(let i=1; i<10; i++) {
+                const lvl = Game.state.buildings[i] || 0;
+                if(lvl > 0) {
+                    const power = (Math.pow(3, i-1) * lvl) * mult;
+                    ePs += power;
+                    if(i%2===0) mPs += power * 0.5;
+                    if(i%3===0) kPs += power * 0.2;
+                }
+            }
+            
+            // Tech multiplier
+            const techMult = 1 + (Game.state.upgrades.length * 0.1);
+            ePs *= techMult; mPs *= techMult; kPs *= techMult;
+
+            Game.state.energy += ePs/10;
+            Game.state.minerals += mPs/10;
+            Game.state.knowledge += kPs/10;
+            Game.state.playtime += 0.1;
+
+            Game.ui.updateLabels(ePs, mPs, kPs);
+        }
+    },
+
+    ui: {
+        init() {
+            this.genList('buildings-list', 8, (i) => {
+                const lvl = Game.state.buildings[i+1] || 0;
+                const base = 50 * Math.pow(5, i);
+                const cost = Math.floor(base * Math.pow(1.15, lvl));
+                return `
+                <div class="card" style="padding:12px; margin-bottom:10px">
+                    <div class="card-header" style="margin:0">
+                        <span style="font-weight:700; font-size:14px">${Gen.bNames[i]||'Unknown Device'}</span>
+                        <span style="font-size:11px; color:#888">Lv.${lvl}</span>
+                    </div>
+                    <button class="btn-action buy" onclick="Game.logic.buyBuilding(${i+1}, event)">Build (${fmt(cost)})</button>
+                </div>`;
+            });
+
+            this.genList('tech-list', 10, (i) => {
+                const t = Gen.techs[i];
+                const bought = Game.state.upgrades.includes(t.id);
+                return `
+                <button class="btn-action" style="${bought?'border-color:var(--neon-green); color:var(--neon-green)':''}" 
+                    ${bought?'disabled':''} 
+                    onclick="Game.logic.buyTech(${t.id}, ${t.cost}, event)">
+                    ${bought ? 'INSTALLED' : t.name + '<br><span style="font-size:10px; opacity:0.7">'+fmt(t.cost)+' Kn</span>'}
+                </button>`;
+            });
+
+            this.genList('planet-list', 5, (i) => {
+                const cost = 50000 * Math.pow(4, i);
+                const owned = Game.state.planets.includes(i);
+                return `
+                <div class="card" style="display:flex; align-items:center;">
+                    <div class="planet-icon" style="filter:hue-rotate(${i*50}deg)"></div>
+                    <div style="flex:1">
+                        <div style="font-weight:700">${Gen.pNames[i]} Sector</div>
+                        <div style="font-size:11px; color:#888">${owned ? 'Mining Operations Active' : 'Unexplored'}</div>
+                    </div>
+                    <button class="btn-action" style="width:auto; margin:0; font-size:12px" 
+                        ${owned?'disabled':''} 
+                        onclick="Game.logic.colonize(${i}, ${cost}, event)">
+                        ${owned ? 'OWNED' : fmt(cost)}
+                    </button>
+                </div>`;
+            });
+        },
+
+        genList(id, count, fn) {
+            let html = '';
+            for(let i=0; i<count; i++) html += fn(i);
+            $(id).innerHTML = html;
+        },
+
+        tab(id, btn) {
+            document.querySelectorAll('.tab-view').forEach(e => e.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            $(id).classList.add('active');
+            btn.classList.add('active');
+            // Reset scroll
+            document.querySelector('.main-viewport').scrollTop = 0;
+        },
+
+        updateLabels(eps, mps, kps) {
+            $('res-energy').innerText = fmt(Game.state.energy);
+            $('res-minerals').innerText = fmt(Game.state.minerals);
+            $('res-know').innerText = fmt(Game.state.knowledge);
+            $('res-dm').innerText = fmt(Game.state.darkMatter);
+            
+            $('ps-energy').innerText = `+${fmt(eps)}/s`;
+            $('ps-energy').style.opacity = eps > 0 ? 1 : 0;
+            
+            // Stats & Update costs dynamic
+            $('tap-power').innerText = fmt((1+(Game.state.buildings[0]||0)) * (1 + Game.state.darkMatter*0.1));
+            $('gen-lvl').innerText = Game.state.buildings[0]||0;
+            $('gen-cost').innerText = fmt(Math.floor(10 * Math.pow(1.5, Game.state.buildings[0]||0)));
+            $('stat-clicks').innerText = Game.state.clickCount;
+            $('stat-time').innerText = Math.floor(Game.state.playtime);
+            
+            // Re-render cost labels for buildings (simplified for performance)
+            if(Game.state.clickCount % 10 === 0) this.init(); 
+        },
+
+        floatText(x, y, txt) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.innerText = txt;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        },
+
+        ripple(e) {
+            const btn = e.currentTarget;
+            const circle = document.createElement('span');
+            const diam = Math.max(btn.clientWidth, btn.clientHeight);
+            const radius = diam / 2;
+            const rect = btn.getBoundingClientRect();
+            
+            circle.style.width = circle.style.height = `${diam}px`;
+            circle.style.left = `${e.clientX - rect.left - radius}px`;
+            circle.style.top = `${e.clientY - rect.top - radius}px`;
+            circle.classList.add('ripple');
+            
+            const ripple = btn.getElementsByClassName('ripple')[0];
+            if (ripple) ripple.remove();
+            
+            btn.appendChild(circle);
+        },
+
+        toast(msg) {
+            // Simple visual feedback
+        }
+    },
+
+    saveSystem: {
+        save(notify) {
+            localStorage.setItem('PocketInds_v6', JSON.stringify(Game.state));
+            if(notify) alert("Game Saved");
+        },
+        load() {
+            const s = localStorage.getItem('PocketInds_v6');
+            if(s) Game.state = {...Game.state, ...JSON.parse(s)};
+        },
+        reset() {
+            if(confirm("Wipe all data?")) {
+                localStorage.removeItem('PocketInds_v6');
+                location.reload();
+            }
+        }
+    },
+    
+    bg: {
+        init() {
+            const c = $('starfield');
+            const ctx = c.getContext('2d');
+            let w = c.width = window.innerWidth;
+            let h = c.height = window.innerHeight;
+            const stars = Array.from({length:150}, ()=>({x:Math.random()*w, y:Math.random()*h, s:Math.random()*2}));
+            
+            function anim() {
+                ctx.clearRect(0,0,w,h);
+                ctx.fillStyle = "rgba(255,255,255,0.8)";
+                stars.forEach(st => {
+                    st.y -= st.s * 0.2;
+                    if(st.y < 0) st.y = h;
+                    ctx.beginPath();
+                    ctx.arc(st.x, st.y, st.s, 0, Math.PI*2);
+                    ctx.fill();
+                });
+                requestAnimationFrame(anim);
+            }
+            anim();
+            
+            // Gyroscope Parallax
+            window.addEventListener('deviceorientation', (e) => {
+                const x = e.gamma / 5; // Tilt L/R
+                const y = e.beta / 5;  // Tilt F/B
+                $('3d-layer').style.transform = `rotateY(${x}deg) rotateX(${-y + 10}deg)`;
+            });
+            // Mouse fallback
+            document.addEventListener('mousemove', (e) => {
+                const x = (window.innerWidth/2 - e.clientX)/30;
+                const y = (window.innerHeight/2 - e.clientY)/30;
+                $('3d-layer').style.transform = `rotateY(${x}deg) rotateX(${y}deg)`;
+            });
+        }
+    }
+};
+
+window.onload = () => {
+    Game.saveSystem.load();
+    Game.bg.init();
+    Game.ui.init();
+    setInterval(Game.logic.tick, 100);
+    setInterval(() => Game.saveSystem.save(false), 30000);
+};
+</script>
+</body>
+</html>
